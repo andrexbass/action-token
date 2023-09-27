@@ -42,12 +42,12 @@ items:
           - "--http-port=8180"
           - "--spi-action-token-handler-external-app-notification-hmac-secret=aSqzP4reFgWR4j94BDT1r+81QYp/NYbY9SBwXtqV1ko="
           volumeMounts:
-          - name: providers-volume
+          - name: providers-configmap-volume
             mountPath: /opt/keycloak/providers
     volumes:
-    - name: providers-volume
-      persistentVolumeClaim:
-        claimName: keycloak-providers-pvc
+    - name: providers-configmap-volume
+      configMap:
+        claimName: keycloak-providers-configmap
 
 # Keycloak Service
 - apiVersion: v1
