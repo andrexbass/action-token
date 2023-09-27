@@ -1,0 +1,113 @@
+
+apiVersion: v1
+kind: List
+items:
+
+# Keycloak PVC
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: keycloak-providers-pvc
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
+
+# Keycloak DeploymentConfig
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    name: keycloak
+  spec:
+    replicas: 1
+    template:
+      metadata:
+        labels:
+          app: keycloak
+      spec:
+        containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:22.0.3
+          ports:
+          - containerPort: 8180
+          env:
+          - name: KEYCLOAK_ADMIN
+            value: admin
+          - name: KEYCLOAK_ADMIN_PASSWORD
+            value: admin
+          args:
+          - "start-dev"
+          - "--http-port=8180"
+          - "--spi-action-token-handler-external-app-notification-hmac-secret=aSqzP4reFgWR4j94BDT1r+81QYp/NYbY9SBwXtqV1ko="
+          volumeMounts:
+          - name: providers-volume
+            mountPath: /opt/keycloak/providers
+    volumes:
+    - name: providers-volume
+      persistentVolumeClaim:
+        claimName: keycloak-providers-pvc
+
+# Keycloak Service
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: keycloak
+  spec:
+    selector:
+      app: keycloak
+    ports:
+    - name: http
+      port: 8180
+      targetPort: 8180
+
+# Wildfly PVC
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: wildfly-app-pvc
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
+
+# Wildfly DeploymentConfig
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    name: wildfly
+  spec:
+    replicas: 1
+    template:
+      metadata:
+        labels:
+          app: wildfly
+      spec:
+        containers:
+        - name: wildfly
+          image: jboss/wildfly:latest
+          ports:
+          - containerPort: 8080
+          volumeMounts:
+          - name: app-volume
+            mountPath: /opt/jboss/wildfly/standalone/deployments
+    volumes:
+    - name: app-volume
+      persistentVolumeClaim:
+        claimName: wildfly-app-pvc
+
+# Wildfly Service
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: wildfly
+  spec:
+    selector:
+      app: wildfly
+    ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
